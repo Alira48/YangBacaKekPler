@@ -1,0 +1,265 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tic Tac Toe - Very Hard AI</title>
+  <style>
+    body {
+      background-color: black;
+      color: white;
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+    h1 {
+      margin-top: 20px;
+    }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 5px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+    .cell {
+      width: 100px;
+      height: 100px;
+      background-color: black;
+      border: 2px solid white;
+      font-size: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .O { color: blue; }
+    .X { color: red; }
+    #reward-buttons, #next-stage, #bonus-buttons, #gacha-choice {
+      display: none;
+      margin-top: 20px;
+    }
+    button {
+      font-size: 20px;
+      margin: 10px;
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Menangkan 3 kali lalu dapatkan hadiahnya</h1>
+  <div id="board"></div>
+
+  <div id="reward-buttons">
+    <p>Video apa yang kamu inginkan?</p>
+    <button onclick="window.location.href = 'https://www.xvv1deos.com/video.otldavhca5f/aglaea'">Aglaea</button>
+    <button onclick="window.location.href = 'https://www.xvv1deos.com/video.ohulmbfb0e1/fleurdelys'">Fleurdelys</button>
+  </div>
+
+  <div id="next-stage">
+    <p>Dapatkan lebih banyak video jika berhasil menang 25 kali</p>
+    <button onclick="document.getElementById('bonus-buttons').style.display = 'block'; this.style.display = 'none';">Lanjut</button>
+  </div>
+
+  <div id="bonus-buttons">
+    <p>Hadiah berdasarkan jumlah kemenangan:</p>
+    <div id="extra-rewards"></div>
+  </div>
+
+  <div id="gacha-choice">
+    <p>Kamu kalah 5 kali berturut-turut 🫵🏻😂</p>
+    <button onclick="continueGame()">Lanjut Bermain</button>
+    <button onclick="rollGacha()">Gacha Hadiah</button>
+  </div>
+
+  <script>
+    const board = document.getElementById("board");
+    let cells = Array(9).fill("");
+    let playerTurn = true;
+    let winCount = 0;
+    let loseStreak = 0;
+    let gachaUsed = false;
+
+    const gachaRewards = [
+      "https://www.xvv1deos.com/video.otldavhca5f/aglaea", "https://www.xvv1deos.com/video.ohulmbfb0e1/fleurdelys",
+      "https://www.xvideos.com/video.otupbpm2ca8/the_shorekeeper", "https://www.xvideos.com/video.ufekeeo81e7/mavuika",
+      "https://www.xvideos.com/video.uevoibd3ed9/ruan_mei", "https://rule34video.com/video/3457392/kakudate-karin-ichinose-asuna-blue-archive-zombie-alone/",
+      "https://rule34video.com/video/3720097/rina-the-new-eridu-best-maid-sweetgpt/", "https://www.iwara.tv/video/xVO653FIX4XG4L/zzz-triple-trouble-in-new-erido",
+      "https://www.iwara.tv/video/9lG6o2I6J394Az/fallen-detective-yelan", "https://www.iwara.tv/video/BhXY6GVvlrh6qB/dream-bubble",
+      "https://www.iwara.tv/profile/ricphastly_1/videos", "https://www.iwara.tv/profile/bigg/videos"
+    ];
+
+    function createBoard() {
+      board.innerHTML = "";
+      cells = Array(9).fill("");
+      playerTurn = true;
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
+        cell.dataset.index = i;
+        cell.onclick = playerMove;
+        board.appendChild(cell);
+      }
+    }
+
+    function playerMove(e) {
+      const index = e.target.dataset.index;
+      if (!playerTurn || cells[index]) return;
+      cells[index] = "O";
+      render();
+      if (checkWin("O")) {
+        winCount++;
+        loseStreak = 0;
+        gachaUsed = false;
+        alert("Kamu menang!");
+        updateRewards();
+        if (winCount === 3) {
+          document.getElementById("reward-buttons").style.display = "block";
+          document.getElementById("next-stage").style.display = "block";
+        }
+        createBoard();
+        return;
+      }
+      if (cells.every(cell => cell)) {
+        alert("Seri!");
+        loseStreak = 0;
+        createBoard();
+        return;
+      }
+      playerTurn = false;
+      setTimeout(() => {
+        aiMove();
+        render();
+        if (checkWin("X")) {
+          loseStreak++;
+          alert("Robot menang!");
+          if (loseStreak >= 5 && !gachaUsed) {
+            document.getElementById("gacha-choice").style.display = "block";
+          } else {
+            createBoard();
+          }
+        } else if (cells.every(cell => cell)) {
+          alert("Seri!");
+          loseStreak = 0;
+          createBoard();
+        } else {
+          playerTurn = true;
+        }
+      }, 500);
+    }
+
+    function aiMove() {
+      const chance = Math.random();
+      const empty = cells.map((v, i) => v === "" ? i : null).filter(i => i !== null);
+      if (chance < 0.5) {
+        const move = empty[Math.floor(Math.random() * empty.length)];
+        cells[move] = "X";
+      } else {
+        const bestMove = minimax(cells, "X").index;
+        cells[bestMove] = "X";
+      }
+    }
+
+    function minimax(newBoard, player) {
+      const availSpots = newBoard.map((val, i) => val === "" ? i : null).filter(i => i !== null);
+      if (checkWinBoard(newBoard, "O")) return { score: -10 };
+      if (checkWinBoard(newBoard, "X")) return { score: 10 };
+      if (availSpots.length === 0) return { score: 0 };
+
+      let moves = [];
+      for (let i = 0; i < availSpots.length; i++) {
+        let move = {};
+        move.index = availSpots[i];
+        newBoard[availSpots[i]] = player;
+        move.score = (player === "X")
+          ? minimax(newBoard, "O").score
+          : minimax(newBoard, "X").score;
+        newBoard[availSpots[i]] = "";
+        moves.push(move);
+      }
+
+      let bestMove;
+      if (player === "X") {
+        let bestScore = -Infinity;
+        for (let i = 0; i < moves.length; i++) {
+          if (moves[i].score > bestScore) {
+            bestScore = moves[i].score;
+            bestMove = i;
+          }
+        }
+      } else {
+        let bestScore = Infinity;
+        for (let i = 0; i < moves.length; i++) {
+          if (moves[i].score < bestScore) {
+            bestScore = moves[i].score;
+            bestMove = i;
+          }
+        }
+      }
+      return moves[bestMove];
+    }
+
+    function checkWin(player) {
+      return checkWinBoard(cells, player);
+    }
+
+    function checkWinBoard(board, player) {
+      const wins = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6],
+      ];
+      return wins.some(comb => comb.every(i => board[i] === player));
+    }
+
+    function render() {
+      const divs = document.querySelectorAll(".cell");
+      divs.forEach((div, i) => {
+        div.textContent = cells[i];
+        div.className = "cell " + (cells[i] || "");
+      });
+    }
+
+    function updateRewards() {
+      const rewardDiv = document.getElementById("extra-rewards");
+      rewardDiv.innerHTML = "";
+      if (winCount >= 5) {
+        rewardDiv.innerHTML += `<button onclick="window.location.href='https://www.xvideos.com/video.otupbpm2ca8/the_shorekeeper'">Shorekeeper</button><button onclick="window.location.href='https://www.xvideos.com/video.ufekeeo81e7/mavuika'">Mavuika</button>`;
+      }
+      if (winCount >= 10) {
+        rewardDiv.innerHTML += `<button onclick="window.location.href='https://www.xvideos.com/video.uevoibd3ed9/ruan_mei'">Ruan Mei</button><button onclick="window.location.href='https://rule34video.com/video/3457392/kakudate-karin-ichinose-asuna-blue-archive-zombie-alone/'">K&amp;A</button>`;
+      }
+      if (winCount >= 15) {
+        rewardDiv.innerHTML += `<button onclick="window.location.href='https://rule34video.com/video/3720097/rina-the-new-eridu-best-maid-sweetgpt/'">Rina</button><button onclick="window.location.href='https://www.iwara.tv/video/xVO653FIX4XG4L/zzz-triple-trouble-in-new-erido'">JZY</button>`;
+      }
+      if (winCount >= 20) {
+        rewardDiv.innerHTML += `<button onclick="window.location.href='https://www.iwara.tv/video/9lG6o2I6J394Az/fallen-detective-yelan'">Yelan</button><button onclick="window.location.href='https://www.iwara.tv/video/BhXY6GVvlrh6qB/dream-bubble'">Dream Bubble</button>`;
+      }
+      if (winCount >= 25) {
+        rewardDiv.innerHTML += `<button onclick="window.location.href='https://www.iwara.tv/profile/ricphastly_1/videos'">Ricphastly</button><button onclick="window.location.href='https://www.iwara.tv/profile/bigg/videos'">BravoG</button>`;
+      }
+    }
+
+    function continueGame() {
+      document.getElementById("gacha-choice").style.display = "none";
+      createBoard();
+    }
+
+    function rollGacha() {
+      document.getElementById("gacha-choice").style.display = "none";
+      gachaUsed = true;
+      loseStreak = 0;
+      const isZonk = Math.random() < 0.5;
+      if (isZonk) {
+        alert("ZONK! 😜 Spin kok busuk awokwok!");
+      } else {
+        const rewardLink = gachaRewards[Math.floor(Math.random() * gachaRewards.length)];
+        window.location.href = rewardLink;
+      }
+      createBoard();
+    }
+
+    createBoard();
+  </script>
+</body>
+</html>
